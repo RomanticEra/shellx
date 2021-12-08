@@ -16,14 +16,7 @@ A Core tool for Command-line Shell with listening stdin
 [analysis_badge]: https://img.shields.io/badge/style-romantic__analysis-purple
 [analysis_link]: https://github.com/RomanticEra/romantic_analysis
 
-## Features
-
-TODO: List what your package can do. Maybe include images, gifs, or videos.
-
-## Getting started
-
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
+Extend from [kafka-shell](https://github.com/pulyaevskiy/kafka-shell)
 
 <!-- #include example/README.md -->
 # Usage
@@ -32,9 +25,3 @@ start using the package.
 shellx_core -h
 ```
 <!-- // end of #include -->
-
-## Additional information
-
-TODO: Tell users more about the package: where to find more information, how to 
-contribute to the package, how to file issues, what response they can expect 
-from the package authors, and more.
