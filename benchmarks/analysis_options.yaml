@@ -1,0 +1,8 @@
+include: package:romantic_analysis/analysis_options.yaml
+linter:
+  rules:
+    # Our example actually wants to print to the console
+    avoid_print: false
+
+    # Not necessary for examples
+    public_member_api_docs: false
