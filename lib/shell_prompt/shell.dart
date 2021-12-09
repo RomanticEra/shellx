@@ -1,9 +1,9 @@
 part of shell_prompt;
 
 /// Interface for [Command]
-abstract class ShellCommand {
+abstract class ShellCommand<T> {
   /// a execute of [Command.run]
-  Future<int> execute(List<String> args, Logger output);
+  FutureOr<T> execute(List<String> args, Logger output);
 
   // String signature();
 
@@ -45,19 +45,17 @@ class Shell {
 
   /// resovler command-key to command
   /// run [ShellCommand.execute]
-  FutureOr<int> onSubmit(String value) {
+  FutureOr<void> onSubmit(String value) {
     if (value.isNotEmpty) {
       final list = _getArgs(value);
       final cmd = list.first.trim();
       if (commands.containsKey(cmd)) {
-        return commands[cmd]!.execute(_getArgs(value), logger);
+        commands[cmd]!.execute(_getArgs(value), logger);
       } else {
         final err = Colorize('ERR: No such command.')..red();
         logger.writeln(err);
-        return 1;
       }
     }
-    return 0;
   }
 
   // ignore: public_member_api_docs
