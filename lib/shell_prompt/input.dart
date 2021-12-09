@@ -103,15 +103,13 @@ class ShellInput {
   }
 
   void _handleReturn(String key) {
-    stdout.write(key);
+    logger.write(key);
     try {
       _submitInProgress = true;
       final result = onSubmit(_value);
-      if (result is Future<int>) {
+      if (result is Future<void>) {
         // ignore: avoid_types_on_closure_parameters
-        result.catchError((Object e) {
-          stdout.writeln(e);
-        }).whenComplete(_printPrompt);
+        result.catchError(logger.writeln).whenComplete(_printPrompt);
       }
     } finally {
       _submitInProgress = false;
@@ -121,7 +119,7 @@ class ShellInput {
   }
 
   void _beep() {
-    stdout.write(String.fromCharCodes([0x07]));
+    logger.write(String.fromCharCodes([0x07]));
   }
 
   Future<void> _handleTab(String key) async {
@@ -138,7 +136,7 @@ class ShellInput {
     if (options.length == 1) {
       cursor.moveLeft(_value.length);
       _value = '${options.first.value} ';
-      stdout.write(_value);
+      logger.write(_value);
       cursor.position = _value.length;
     } else {
       // TODO(hz): show options on second <tab>.
@@ -150,11 +148,11 @@ class ShellInput {
     if (cursor.position == _value.length) {
       _value += key;
       cursor.position++;
-      stdout.write(key);
+      logger.write(key);
     } else if (cursor.position < _value.length) {
       final toWrite = key + _value.substring(cursor.position);
       _value = _value.substring(0, cursor.position) + toWrite;
-      stdout.write(toWrite);
+      logger.write(toWrite);
       cursor
         ..position = _value.length
         ..moveLeft(toWrite.length - 1);
@@ -189,7 +187,7 @@ class ShellInput {
       final toWrite = _value.substring(cursor.position);
       _value = _value.substring(0, cursor.position - 1) + toWrite;
       cursor.moveLeft(1);
-      stdout.write('$toWrite ');
+      logger.write('$toWrite ');
       cursor
         ..position = _value.length + 1
         ..moveLeft(toWrite.length + 1);

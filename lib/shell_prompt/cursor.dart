@@ -11,19 +11,19 @@ class Cursor {
   void moveLeft(int count) {
     var _count = count;
     while (_count > 0) {
-      stdout.write('\b');
+      logger.write('\b');
       position--;
       _count--;
     }
   }
 
   void moveRight(int count) {
-    stdout.write('\x1b\x5b\x43');
+    logger.write('\x1b\x5b\x43');
     position++;
   }
 
   void delete(int count) {
-    stdout.write('\b \b');
+    logger.write('\b \b');
     position--;
   }
 
@@ -38,7 +38,7 @@ class Cursor {
         return true;
       }
 
-      stdout.write('\b \b');
+      logger.write('\b \b');
       _onDelete();
       return true;
     } else {

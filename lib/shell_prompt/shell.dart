@@ -3,12 +3,12 @@ part of shell_prompt;
 /// Interface for [Command]
 abstract class ShellCommand {
   /// a execute of [Command.run]
-  Future<int> execute(List<String> args, Stdout output);
+  Future<int> execute(List<String> args, Logger output);
 
   // String signature();
 
   /// help
-  void writeHelp(Stdout output);
+  void writeHelp(Logger output);
 
   /// Called whenever user requests autocomplete. Must return list of possible
   /// options.
@@ -50,10 +50,10 @@ class Shell {
       final list = _getArgs(value);
       final cmd = list.first.trim();
       if (commands.containsKey(cmd)) {
-        return commands[cmd]!.execute(_getArgs(value), stdout);
+        return commands[cmd]!.execute(_getArgs(value), logger);
       } else {
         final err = Colorize('ERR: No such command.')..red();
-        stdout.writeln(err);
+        logger.writeln(err);
         return 1;
       }
     }
