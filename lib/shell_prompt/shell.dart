@@ -1,9 +1,13 @@
 part of shell_prompt;
 
+/// Interface for [Command]
 abstract class ShellCommand {
-  void execute(List<String> args, Stdout output);
+  /// a execute of [Command.run]
+  Future<int> execute(List<String> args, Stdout output);
 
-  String signature();
+  // String signature();
+
+  /// help
   void writeHelp(Stdout output);
 
   /// Called whenever user requests autocomplete. Must return list of possible
@@ -11,56 +15,68 @@ abstract class ShellCommand {
   Future<List<AutocompleteOption>> autocomplete(List<String> args);
 }
 
+/// Enterpoint of this library
 class Shell {
-  final Map<String, ShellCommand> commands = new Map();
-
-  ShellInput _input;
-
-  Shell({ShellPrompt prompt}) {
-    _input = new ShellInput(onSubmit, prompt: prompt);
+  /// construct
+  Shell({ShellPrompt? prompt}) {
+    _input = ShellInput(onSubmit, prompt: prompt);
     _input.onAutocomplete = onAutocomplete;
   }
 
+  /// dict about [ShellCommand]
+  final Map<String, ShellCommand> commands = {};
+
+  late ShellInput _input;
+
+  /// get autocomplete on commands
   Future<List<AutocompleteOption>> onAutocomplete(String input) async {
-    var options = new List();
-    for (var command in commands.values) {
-      var sublist = await command.autocomplete(_getArgs(input));
+    final options = <AutocompleteOption>[];
+    for (final command in commands.values) {
+      final sublist = await command.autocomplete(_getArgs(input));
       options.addAll(sublist);
     }
     return options;
   }
 
   List<String> _getArgs(String input) {
-    var list = input.trim().split(' ').toList();
-    list.removeWhere((s) => s.isEmpty);
-    return list;
+    final list = input.trim().split(' ').toList();
+    return list..removeWhere((s) => s.isEmpty);
   }
 
-  onSubmit(String value) {
+  /// resovler command-key to command
+  /// run [ShellCommand.execute]
+  FutureOr<int> onSubmit(String value) {
     if (value.isNotEmpty) {
-      var list = _getArgs(value);
-      var cmd = list.first.trim();
+      final list = _getArgs(value);
+      final cmd = list.first.trim();
       if (commands.containsKey(cmd)) {
-        return commands[cmd].execute(_getArgs(value), stdout);
+        return commands[cmd]!.execute(_getArgs(value), stdout);
       } else {
-        Colorize err = new Colorize('ERR: No such command.');
-        err.red();
+        final err = Colorize('ERR: No such command.')..red();
         stdout.writeln(err);
+        return 1;
       }
     }
+    return 0;
   }
 
+  // ignore: public_member_api_docs
   void addCommand(String name, ShellCommand command) {
     commands[name] = command;
   }
 
-  StreamSubscription<List<int>> _inputSubscription;
+  StreamSubscription<List<int>>? _inputSubscription;
 
-  Future run() {
-    _inputSubscription = _input.listen();
-    return _inputSubscription.asFuture();
+  // ignore: public_member_api_docs
+  // ignore: prefer_expression_function_bodies,public_member_api_docs
+  StreamSubscription<List<int>> run() {
+    // _inputSubscription = _input.listen();
+    // return _inputSubscription;
+    // return _inputSubscription.asFuture();
+    return _input.listen();
   }
 
+  // ignore: public_member_api_docs
   void cancel() {
     _inputSubscription?.cancel();
   }

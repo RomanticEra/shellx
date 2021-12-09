@@ -1,7 +1,7 @@
 part of shell_prompt;
 
 // ignore: public_member_api_docs
-typedef ShellInputSubmit = dynamic Function(String value);
+typedef ShellInputSubmit = FutureOr<void> Function(String value);
 
 // ignore: public_member_api_docs
 typedef ShellInputAutocomplete = Future<List<AutocompleteOption>> Function(
@@ -9,114 +9,109 @@ typedef ShellInputAutocomplete = Future<List<AutocompleteOption>> Function(
 );
 
 /// Interface for Prompt On Shell
+typedef ShellPrompt = void Function(Stdout);
 
-abstract class ShellPrompt {
-  /// write
-  void write(Stdout output);
-}
-
-class BasicShellPrompt implements ShellPrompt {
-  final String text;
-
-  BasicShellPrompt(this.text);
-
-  @override
-  void write(Stdout output) {
-    output.write(text);
-  }
-}
+/// basic Prompt On Shell
+ShellPrompt basicShellPrompt(String text) => (output) => output.write(text);
 
 /// Option for autocomplete functionality.
-///
-/// [label] will be shown in the list of possible options.
-/// [value] must contain full command string. When user selects any options
-/// `value` is used to completely replace whatever input contained at the moment.
 class AutocompleteOption {
-  final String label;
-  final String value;
-
+  /// consturct
   AutocompleteOption(this.label, this.value);
+
+  /// [label] will be shown in the list of possible options.
+  final String label;
+
+  /// [value] must contain full command string. When user selects any options
+  /// `value` is used to completely replace
+  /// whatever input contained at the moment.
+  final String value;
 }
 
 /// ShellInput implements typical behavior for input field in CLI.
 class ShellInput {
-  ShellPrompt prompt;
-  final ShellInputSubmit onSubmit;
-  ShellInputAutocomplete onAutocomplete;
-  final Cursor cursor = new Cursor();
-  String _value = '';
-
-  Map _handlers;
-
-  bool _submitInProgress = false;
-
-  ShellInput(this.onSubmit, {ShellPrompt prompt}) {
+  /// construct
+  ShellInput(this.onSubmit, {ShellPrompt? prompt}) {
     if (prompt == null) {
-      this.prompt = new BasicShellPrompt('\$ ');
+      this.prompt = basicShellPrompt(r'$ ');
     } else {
       this.prompt = prompt;
     }
 
     stdin.echoMode = false;
     stdin.lineMode = false;
-    _handlers = {
-      "\x1b\x5b\x43": _handleRightArrow,
-      "\x1b\x5b\x44": _handleLeftArrow,
-      "\x1b\x5b\x41": _handleUpArrow,
-      "\x1b\x5b\x42": _handleDownArrow,
-      "\x7f": _handleDelete,
-      "\x09": _handleTab,
-      "\n": _handleReturn
+
+    _handlers = <String, ShellInputSubmit>{
+      '\x1b\x5b\x43': _handleRightArrow,
+      '\x1b\x5b\x44': _handleLeftArrow,
+      '\x1b\x5b\x41': _handleUpArrow,
+      '\x1b\x5b\x42': _handleDownArrow,
+      '\x7f': _handleDelete,
+      '\x09': _handleTab,
+      '\n': _handleReturn
     };
   }
+  // ignore: public_member_api_docs
+  late ShellPrompt prompt;
+  // ignore: public_member_api_docs
+  final ShellInputSubmit onSubmit;
+  // ignore: public_member_api_docs
+  ShellInputAutocomplete? onAutocomplete;
+  // ignore: public_member_api_docs
+  final Cursor cursor = Cursor();
+  String _value = '';
 
+  late Map<String, ShellInputSubmit> _handlers;
+
+  bool _submitInProgress = false;
+
+  /// listen stdin
   StreamSubscription<List<int>> listen() {
     _printPrompt();
-    var sub = stdin.asBroadcastStream().listen((List<int> _) async {
-      if (_submitInProgress) return;
+    final sub = stdin.asBroadcastStream().listen(
+      (_) async {
+        if (_submitInProgress) return;
 
-      var str;
-      try {
-        str = ASCII.decode(_);
-      } on FormatException {
-        str = UTF8.decode(_);
-      }
-
-      if (_handlers.containsKey(str)) {
-        var res = _handlers[str](str);
-        if (res is Future) {
-          await res;
+        String str;
+        try {
+          str = ascii.decode(_);
+        } on FormatException {
+          str = utf8.decode(_);
         }
-        return;
-      } else if (str.contains("\x1b")) {
-        // print(_);
-      } else {
-        // print(_);
-        _handleInsert(str);
-      }
-    }, cancelOnError: true);
+
+        if (_handlers.containsKey(str)) {
+          final dynamic res = _handlers[str]!(str);
+          if (res is Future) {
+            await res;
+          }
+          return;
+        } else if (str.contains('\x1b')) {
+          // print(_);
+        } else {
+          // print(_);
+          _handleInsert(str);
+        }
+      },
+      cancelOnError: true,
+    );
 
     return sub;
   }
 
-  _printPrompt() {
-    prompt.write(stdout);
+  void _printPrompt() {
+    prompt(stdout);
   }
 
-  _handleReturn(String key) async {
+  void _handleReturn(String key) {
     stdout.write(key);
     try {
       _submitInProgress = true;
-      var result = onSubmit(_value);
-      if (result is Future) {
-        result.catchError((e) {
+      final result = onSubmit(_value);
+      if (result is Future<int>) {
+        // ignore: avoid_types_on_closure_parameters
+        result.catchError((Object e) {
           stdout.writeln(e);
-        }).whenComplete(() {
-          _submitInProgress = false;
-          _value = '';
-          cursor.position = 0;
-          _printPrompt();
-        });
+        }).whenComplete(_printPrompt);
       }
     } finally {
       _submitInProgress = false;
@@ -125,16 +120,16 @@ class ShellInput {
     }
   }
 
-  _beep() {
-    stdout.write(new String.fromCharCodes([0x07]));
+  void _beep() {
+    stdout.write(String.fromCharCodes([0x07]));
   }
 
-  _handleTab(String key) async {
+  Future<void> _handleTab(String key) async {
     if (onAutocomplete == null) {
       _beep();
       return;
     }
-    List<AutocompleteOption> options = await onAutocomplete(_value);
+    final options = await onAutocomplete!(_value);
     if (options.isEmpty) {
       _beep();
       return;
@@ -142,46 +137,47 @@ class ShellInput {
 
     if (options.length == 1) {
       cursor.moveLeft(_value.length);
-      _value = options.first.value + ' ';
+      _value = '${options.first.value} ';
       stdout.write(_value);
       cursor.position = _value.length;
     } else {
-      // TODO show options on second <tab>
+      // TODO(hz): show options on second <tab>.
       _beep();
     }
   }
 
-  _handleInsert(String key) {
+  void _handleInsert(String key) {
     if (cursor.position == _value.length) {
       _value += key;
       cursor.position++;
       stdout.write(key);
     } else if (cursor.position < _value.length) {
-      var toWrite = key + _value.substring(cursor.position);
+      final toWrite = key + _value.substring(cursor.position);
       _value = _value.substring(0, cursor.position) + toWrite;
       stdout.write(toWrite);
-      cursor.position = _value.length;
-      cursor.moveLeft(toWrite.length - 1);
+      cursor
+        ..position = _value.length
+        ..moveLeft(toWrite.length - 1);
     }
   }
 
-  _handleRightArrow(String key) {
+  void _handleRightArrow(String key) {
     if (cursor.position < _value.length) {
       cursor.moveRight(1);
     }
   }
 
-  _handleLeftArrow(String key) {
+  void _handleLeftArrow(String key) {
     if (cursor.position > 0) {
       cursor.moveLeft(1);
     }
   }
 
-  _handleUpArrow(String key) {}
+  void _handleUpArrow(String key) {}
 
-  _handleDownArrow(String key) {}
+  void _handleDownArrow(String key) {}
 
-  _handleDelete(String key) {
+  void _handleDelete(String key) {
     if (_value.isEmpty || cursor.position == 0) {
       return;
     }
@@ -190,12 +186,13 @@ class ShellInput {
       _value = _value.substring(0, _value.length - 1);
       cursor.delete(1);
     } else if (cursor.position < _value.length) {
-      var toWrite = _value.substring(cursor.position);
+      final toWrite = _value.substring(cursor.position);
       _value = _value.substring(0, cursor.position - 1) + toWrite;
       cursor.moveLeft(1);
-      stdout.write(toWrite + ' ');
-      cursor.position = _value.length + 1;
-      cursor.moveLeft(toWrite.length + 1);
+      stdout.write('$toWrite ');
+      cursor
+        ..position = _value.length + 1
+        ..moveLeft(toWrite.length + 1);
     }
   }
 }

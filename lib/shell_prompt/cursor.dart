@@ -1,34 +1,36 @@
+// ignore_for_file: public_member_api_docs
+
 part of shell_prompt;
+
+void doNull() {}
 
 class Cursor {
   int position = 0;
-  Function _onDelete;
+  void Function() _onDelete = doNull;
 
   void moveLeft(int count) {
-    while (count > 0) {
-      stdout.write("\b");
+    var _count = count;
+    while (_count > 0) {
+      stdout.write('\b');
       position--;
-      count--;
+      _count--;
     }
   }
 
   void moveRight(int count) {
-    stdout.write("\x1b\x5b\x43");
+    stdout.write('\x1b\x5b\x43');
     position++;
   }
 
   void delete(int count) {
-    stdout.write("\b \b");
+    stdout.write('\b \b');
     position--;
   }
 
-  bool handleKey(List<int> input, String currentText) {
-    return _handleDelete(input, currentText);
-  }
-
-  void onDelete(Function onDelete) {
-    _onDelete = onDelete;
-  }
+  bool handleKey(List<int> input, String currentText) =>
+      _handleDelete(input, currentText);
+  void Function() get onDelete => throw Exception('Do use inner prop');
+  set onDelete(void Function() onDelete) => _onDelete = onDelete;
 
   bool _handleDelete(List<int> input, String currentText) {
     if (input.length == 1 && input[0] == 127) {
@@ -36,8 +38,8 @@ class Cursor {
         return true;
       }
 
-      stdout.write("\b \b");
-      _onDelete?.call();
+      stdout.write('\b \b');
+      _onDelete();
       return true;
     } else {
       return false;
