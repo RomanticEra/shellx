@@ -9,7 +9,7 @@ typedef ShellInputAutocomplete = Future<List<AutocompleteOption>> Function(
 );
 
 /// Interface for Prompt On Shell
-typedef ShellPrompt = void Function(Stdout);
+typedef ShellPrompt = void Function(StandardLogger);
 
 /// basic Prompt On Shell
 ShellPrompt basicShellPrompt(String text) => (output) => output.write(text);
@@ -99,7 +99,7 @@ class ShellInput {
   }
 
   void _printPrompt() {
-    prompt(stdout);
+    prompt(logger);
   }
 
   void _handleReturn(String key) {
@@ -147,15 +147,17 @@ class ShellInput {
   void _handleInsert(String key) {
     if (cursor.position == _value.length) {
       _value += key;
-      cursor.position++;
+      cursor.position += key.length;
       logger.write(key);
     } else if (cursor.position < _value.length) {
-      final toWrite = key + _value.substring(cursor.position);
+      final rightSide = _value.substring(cursor.position);
+      final toWrite = key + rightSide;
       _value = _value.substring(0, cursor.position) + toWrite;
       logger.write(toWrite);
+      // cursor.moveLeft(toWrite.length - 1);
       cursor
         ..position = _value.length
-        ..moveLeft(toWrite.length - 1);
+        ..moveLeft(rightSide.length);
     }
   }
 

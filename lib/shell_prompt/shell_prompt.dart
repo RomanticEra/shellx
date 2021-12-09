@@ -14,7 +14,7 @@ part 'input.dart';
 part 'shell.dart';
 
 /// logger interface for test
-final logger = StandardLogger();
+StandardLogger logger = StandardLogger();
 
 /// ada
 extension Writeln on Logger {
