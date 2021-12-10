@@ -1,6 +1,6 @@
 name: shellx_core
 description: A Core tool for Command-line Shell with listening stdin
-version: 0.0.1+1
+version: 0.0.2
 repository: https://github.com/RomanticEra/shellx_core
 
 environment:
