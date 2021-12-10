@@ -7,6 +7,7 @@ environment:
   sdk: ">=2.14.0 <3.0.0"
 dependencies:
   args: "^2.3.0"
+  cli_script:
   cli_util:
   colorize: "^3.0.0"
   universal_io: ^2.0.4

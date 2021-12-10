@@ -1,9 +1,9 @@
 part of shell_prompt;
 
 /// Interface for [Command]
-abstract class ShellCommand<T> {
+abstract class ShellCommand {
   /// a execute of [Command.run]
-  FutureOr<T> execute(List<String> args, Logger output);
+  FutureOr<void> execute(List<String> args, Logger output);
 
   // String signature();
 
@@ -12,7 +12,32 @@ abstract class ShellCommand<T> {
 
   /// Called whenever user requests autocomplete. Must return list of possible
   /// options.
-  Future<List<AutocompleteOption>> autocomplete(List<String> args);
+  FutureOr<List<AutocompleteOption>> autocomplete(List<String> args);
+}
+
+/// simplify shell command
+abstract class SimpleCommand extends ShellCommand {
+  @override
+  FutureOr<List<AutocompleteOption>> autocomplete(List<String> args) =>
+      <AutocompleteOption>[];
+
+  @override
+  void writeHelp(Logger output) {}
+}
+
+/// script name of melos.yaml
+class MelosCommand extends SimpleCommand {
+  // ignore: public_member_api_docs
+  MelosCommand(this.scriptName);
+
+  // ignore: public_member_api_docs
+  final String scriptName;
+
+  @override
+  Future<void> execute(List<String> args, Logger output) async {
+    logger.write('>> run into $scriptName\n');
+    await cs.run('melos run $scriptName');
+  }
 }
 
 /// Enterpoint of this library
@@ -45,15 +70,17 @@ class Shell {
 
   /// resovler command-key to command
   /// run [ShellCommand.execute]
-  FutureOr<void> onSubmit(String value) {
+  FutureOr<void> onSubmit(String value) async {
     if (value.isNotEmpty) {
       final list = _getArgs(value);
       final cmd = list.first.trim();
       if (commands.containsKey(cmd)) {
-        commands[cmd]!.execute(_getArgs(value), logger);
+        await commands[cmd]!.execute(_getArgs(value), logger);
       } else {
-        final err = Colorize('ERR: No such command.')..red();
+        final err = Colorize('ERR: No such command. Run into Bash')..red();
+        // final err = Colorize('ERR: No such command.')..red();
         logger.writeln(err);
+        await cs.run(cmd);
       }
     }
   }

@@ -28,6 +28,35 @@ class AutocompleteOption {
   final String value;
 }
 
+/// encapsulation history for [ShellInput._handleUpArrow] and
+/// [ShellInput._handleDownArrow]
+class InputHistory {
+  /// history command
+  final List<String> history = [];
+  // String originStr = '';
+
+  /// count of you press UpArrow
+  int diffIndex = 0;
+
+  /// edge safe up
+  void up() {
+    if (diffIndex < history.length) diffIndex++;
+  }
+
+  /// edge safe down
+  void down() {
+    if (diffIndex > 1) diffIndex--;
+  }
+
+  /// add value to history
+  void add(String value) {
+    if (value.trim() != '' && !history.contains(value)) history.add(value);
+  }
+
+  /// simple to get value
+  String get value => history[history.length - diffIndex];
+}
+
 /// ShellInput implements typical behavior for input field in CLI.
 class ShellInput {
   /// construct
@@ -61,6 +90,8 @@ class ShellInput {
   final Cursor cursor = Cursor();
   String _value = '';
 
+  final InputHistory _history = InputHistory();
+
   late Map<String, ShellInputSubmit> _handlers;
 
   bool _submitInProgress = false;
@@ -80,7 +111,7 @@ class ShellInput {
         }
 
         if (_handlers.containsKey(str)) {
-          final dynamic res = _handlers[str]!(str);
+          final res = _handlers[str]!(str);
           if (res is Future) {
             await res;
           }
@@ -102,17 +133,21 @@ class ShellInput {
     prompt(logger);
   }
 
-  void _handleReturn(String key) {
+  Future<void> _handleReturn(String key) async {
     logger.write(key);
     try {
       _submitInProgress = true;
       final result = onSubmit(_value);
-      if (result is Future<void>) {
-        // ignore: avoid_types_on_closure_parameters
-        result.catchError(logger.writeln).whenComplete(_printPrompt);
+
+      if (result is Future) {
+        await result;
       }
+      _printPrompt();
+      // ignore: avoid_catches_without_on_clauses, empty_catches
+    } catch (e) {
     } finally {
       _submitInProgress = false;
+      _history.add(_value);
       _value = '';
       cursor.position = 0;
     }
@@ -173,9 +208,25 @@ class ShellInput {
     }
   }
 
-  void _handleUpArrow(String key) {}
+  void _handleUpArrow(String key) {
+    if (_history.history.isEmpty) return;
+    cursor.newLine(_value.length);
+    _history.up();
+    // print(_history.diffIndex);
+    _value = _history.value;
+    logger.write(_value);
+    cursor.position = _value.length;
+  }
 
-  void _handleDownArrow(String key) {}
+  void _handleDownArrow(String key) {
+    if (_history.history.isEmpty) return;
+    cursor.newLine(_value.length);
+    _history.down();
+    // print(_history.diffIndex);
+    _value = _history.value;
+    logger.write(_value);
+    cursor.position = _value.length;
+  }
 
   void _handleDelete(String key) {
     if (_value.isEmpty || cursor.position == 0) {

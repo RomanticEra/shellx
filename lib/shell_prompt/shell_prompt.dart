@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:args/command_runner.dart';
+import 'package:cli_script/cli_script.dart' as cs;
 import 'package:cli_util/cli_logging.dart';
 import 'package:colorize/colorize.dart';
 import 'package:universal_io/io.dart';

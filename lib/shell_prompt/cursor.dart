@@ -8,6 +8,22 @@ class Cursor {
   int position = 0;
   void Function() _onDelete = doNull;
 
+  void newLine(int valueLen) {
+    final sp = position;
+
+    for (var i = 0; i < valueLen - sp; i++) {
+      if (position < valueLen) {
+        // moveRight(1);
+        logger.write('\x1b\x5b\x43');
+      }
+    }
+
+    for (var i = 0; i < valueLen; i++) {
+      logger.write('\b \b');
+    }
+    position = 0;
+  }
+
   void moveLeft(int count) {
     var _count = count;
     while (_count > 0) {
