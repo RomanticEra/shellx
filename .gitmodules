@@ -1,0 +1,3 @@
+[submodule "packages/shellx_core"]
+	path = packages/shellx_core
+	url = /Users/huangzheng/RomanticEra/shellx/packages/shellx_core
